@@ -1,41 +1,31 @@
-/* ************************************************************************** */
-/*	                                                                        */
-/*                                                        :::      ::::::::   */
-/*   get_next_line.c                                    :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: adiaz-le <adiaz-le@student.42madrid.com    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/12/04 17:43:50 by adiaz-le          #+#    #+#             */
-/*   Updated: 2024/12/04 18:49:33 by adiaz-le         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "get_next_line.h"
 
 static char	*read_buffer(int fd, char *buffer)
 {
 	char	*temp_buffer;
 	ssize_t	readed;
-	int i = 0;
+	char	*temp;
 
 	temp_buffer = (char *)ft_calloc(BUFFER_SIZE + 1, 1);
 	if (!temp_buffer)
 		return (free(buffer), NULL);
 	readed = 1;
-	while (readed > 0 && !ft_strchr(temp_buffer, '\n'))
+	while (!ft_strchr(buffer, '\n') && readed > 0)
 	{
-		printf("Paso\n");
 		readed = read(fd, temp_buffer, BUFFER_SIZE);
-		printf("He leido %zu\n", readed > 0);
 		if (readed < 0)
-			return (free(buffer), buffer = NULL, free(temp_buffer), NULL);
+			return (free(temp_buffer), free(buffer), NULL);
+		if (readed == 0)
+			break ;
 		temp_buffer[readed] = '\0';
-		buffer = ft_strjoin(buffer, temp_buffer);
-		if (!buffer)
+		temp = ft_strjoin(buffer, temp_buffer);
+		if (!temp)
 			return (free(temp_buffer), NULL);
-		i++;
+		buffer = temp;
 	}
 	free(temp_buffer);
+	if (readed == 0 && (!buffer || *buffer == '\0'))
+		return (free(buffer), NULL);
 	return (buffer);
 }
 
@@ -52,7 +42,7 @@ static char	*get_line_from_buffer(char *buffer)
 	else
 		line = (char *)ft_calloc(i + 1, 1);
 	if (!line)
-		return (free(buffer), buffer = NULL, NULL);
+		return (free(buffer), NULL);
 	i = 0;
 	while (buffer[i] != '\0' && buffer[i] != '\n')
 	{
@@ -68,13 +58,14 @@ static char	*get_line_from_buffer(char *buffer)
 	return (line);
 }
 
-char	*newbuffer(char *buffer)
+static char	*newbuffer(char *buffer)
 {
-	int		i;
-	int		j;
+	size_t	i;
+	size_t	j;
 	char	*new_buffer;
 
 	i = 0;
+	j = 0;
 	while (buffer[i] != '\0' && buffer[i] != '\n')
 		i++;
 	if (!buffer[i])
@@ -83,23 +74,19 @@ char	*newbuffer(char *buffer)
 	if (!new_buffer)
 		return (free(buffer), NULL);
 	i++;
-	j = 0;
 	while (buffer[i])
 		new_buffer[j++] = buffer[i++];
+	free(buffer);
 	return (new_buffer);
 }
 
 char	*get_next_line(int fd)
 {
-	static char	*buffer;
+	static char	*buffer = NULL;
 	char		*line;
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (free(buffer), buffer = NULL, NULL);
-	if (!buffer)
-		buffer = ft_calloc(BUFFER_SIZE + 1, 1);
-	if (!buffer)
-		return (NULL);
 	buffer = read_buffer(fd, buffer);
 	if (!buffer)
 		return (NULL);
@@ -110,17 +97,22 @@ char	*get_next_line(int fd)
 	return (line);
 }
 
-#include <fcntl.h>
-#include <stdio.h>
-int main(void)
-{
-	int i = 10;
-	int fd = open("hola.txt", O_RDONLY);
-	char *line = get_next_line(fd);
-	while (line != NULL)
-	{
-		printf("%s", line);
-		free(line);
-		line = get_next_line(fd);
-	}
-}
+// int main(void)
+// {
+//     int fd = open("hola", O_RDONLY);
+//     if (fd < 0)
+//     {
+//         perror("Error al abrir el archivo");
+//         return (1);
+//     }
+
+//     char *line = get_next_line(fd);
+//     while (line)
+//     {
+//         printf("%s", line);
+//         free(line);
+//         line = get_next_line(fd);
+//     }
+//     close(fd);
+//     return (0);
+// }
